@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cute Website</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: linear-gradient(135deg, #ffb6b9, #ffdde1);
+    color: #333;
+    text-align: center;
+    transition: background 1s ease, color 1s ease;
+  }
+
+  .container {
+    margin-top: 50px;
+  }
+
+  img {
+    max-width: 300px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+
+  button {
+    background-color: #ff69b4;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+
+  button:hover {
+    transform: scale(1.1);
+    background-color: #ff85c1;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .whiteout {
+    background: #ffffff !important;
+    color: #000;
+  }
+
+  .white-box {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    display: inline-block;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  }
+
+  .final-transition {
+    font-size: 2em;
+    margin-top: 30px;
+    color: #ff69b4;
+    font-weight: bold;
+  }
+
+  p {
+    max-width: 400px;
+    margin: 0 auto 20px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <img id="memeImage" src="meme.png" alt="Meme">
+  <h1>Hi there beautiful</h1>
+  <button id="firstBtn">Click here</button>
+
+  <div id="message" class="hidden">
+    <p>You're so incredibly beautiful, I fear I'd bore you to tears by repeating it endlessly. If only I could show you the music your voice creates</p>
+    <button id="secondBtn">Click me</button>
+  </div>
+
+  <div id="whiteoutSection" class="hidden">
+    <div class="white-box">
+      <img id="img2" src="meme.jpg" alt="meme.jpg" style="max-width: 200px;">
+    </div>
+  </div>
+
+  <div id="finalMessage" class="hidden final-transition">
+    <p>OK I'M KIDDING you actually sound like</p>
+    <button id="finalBtn">Click me</button>
+  </div>
+</div>
+
+<audio id="audioClip" src="meme.mp3"></audio>
+
+<script>
+  const firstBtn = document.getElementById('firstBtn');
+  const secondBtn = document.getElementById('secondBtn');
+  const finalBtn = document.getElementById('finalBtn');
+
+  const message = document.getElementById('message');
+  const whiteoutSection = document.getElementById('whiteoutSection');
+  const finalMessage = document.getElementById('finalMessage');
+  const audioClip = document.getElementById('audioClip');
+
+  firstBtn.addEventListener('click', () => {
+    message.classList.remove('hidden');
+    firstBtn.classList.add('hidden');
+  });
+
+  secondBtn.addEventListener('click', () => {
+    document.body.classList.add('whiteout');
+    whiteoutSection.classList.remove('hidden');
+
+    // Start audio at 7s
+    audioClip.currentTime = 7;
+    audioClip.play();
+
+    // Stop at 13s
+    const stopAudioAt = 13;
+    const checkAudio = setInterval(() => {
+      if (audioClip.currentTime >= stopAudioAt) {
+        audioClip.pause();
+        clearInterval(checkAudio);
+      }
+    }, 100);
+
+    setTimeout(() => {
+      finalMessage.classList.remove('hidden');
+    }, 6000); // show final message after 6s (13-7)
+  });
+
+  finalBtn.addEventListener('click', () => {
+    window.location.href = 'https://youtu.be/VF-r5TtlT9w?si=Sl1geCFdWIBu-_gM';
+  });
+</script>
+</body>
+</html>
