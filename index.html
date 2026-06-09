@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smooth Scroll Experience</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overscroll-behavior-y: none;
+        }
+        
+        body {
+            overflow-x: hidden;
+        }
+
+        #scroll-container {
+            position: relative;
+            width: 100%;
+            height: 500vh;
+        }
+
+        .sticky-wrapper {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            /* For mobile Safari issues with 100vh */
+            height: 100dvh; 
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color);
+        }
+
+        #bg-canvas {
+            width: 100vw;
+            height: 100dvh;
+            /* Makes the canvas crop/scale cleanly like a background image on all devices */
+            object-fit: cover;
+            display: block;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .content-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+            mix-blend-mode: difference;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin: 0;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        
+        p {
+            font-size: clamp(1rem, 4vw, 1.5rem);
+            opacity: 0.7;
+            margin-top: 1rem;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--bg-color);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        .progress-bar-container {
+            width: 200px;
+            height: 4px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            transition: width 0.1s linear;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+            40% { transform: translateY(-20px) translateX(-50%); }
+            60% { transform: translateY(-10px) translateX(-50%); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="loading-overlay" id="loader">
+        <div class="loading-text">Loading Experience... <span id="progress-text">0</span>%</div>
+        <div class="progress-bar-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div id="scroll-container">
+        <div class="sticky-wrapper">
+            <!-- Canvas resolution set to the WebP resolution (720x1280) for 1:1 pixel mapping before CSS scaling -->
+            <canvas id="bg-canvas" width="720" height="1280"></canvas>
+            
+            <!-- Text removed -->
+            
+            <div class="scroll-indicator">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            const loader = document.getElementById('loader');
+            const progressText = document.getElementById('progress-text');
+            const progressBar = document.getElementById('progress-bar');
+
+            // Set frame count based on extraction
+            const frameCount = 192; 
+            
+            // Generate frame URLs (frame_0000.webp to frame_0191.webp)
+            const currentFrame = index => (
+                `frames/frame_${index.toString().padStart(4, '0')}.webp`
+            );
+
+            const images = [];
+            let loadedImages = 0;
+
+            // Preload all images
+            for (let i = 0; i < frameCount; i++) {
+                const img = new Image();
+                img.src = currentFrame(i);
+                images.push(img);
+
+                img.onload = () => {
+                    loadedImages++;
+                    // Update progress UI
+                    const pct = Math.floor((loadedImages / frameCount) * 100);
+                    progressText.innerText = pct;
+                    progressBar.style.width = pct + '%';
+
+                    if (loadedImages === frameCount) {
+                        // All images loaded, hide loader and draw first frame
+                        setTimeout(() => {
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.style.visibility = 'hidden', 500);
+                            drawFrame(0);
+                            // Start animation loop once loaded
+                            requestAnimationFrame(tick);
+                        }, 500);
+                    }
+                };
+            }
+
+            // Function to draw a specific frame
+            function drawFrame(index) {
+                if (images[index] && images[index].complete) {
+                    // Clear the canvas and draw the new image
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(images[index], 0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            // Animation Loop variables
+            let currentScrollY = 0;
+            let targetScrollY = 0;
+            // Easing for smooth scrubbing (0.05 is buttery smooth, 1 is instant)
+            const ease = 0.08;
+
+            function updateCanvas() {
+                // Calculate max scroll depth
+                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                
+                if (maxScroll > 0) {
+                    const scrollProgress = currentScrollY / maxScroll;
+                    
+                    // Map scroll progress to a frame index (0 to frameCount - 1)
+                    // We use Math.floor to ensure an integer index
+                    const frameIndex = Math.min(
+                        frameCount - 1, 
+                        Math.max(0, Math.floor(scrollProgress * frameCount))
+                    );
+                    
+                    drawFrame(frameIndex);
+                }
+            }
+
+            function tick() {
+                // Linear interpolation for silky smooth scroll progress
+                currentScrollY += (targetScrollY - currentScrollY) * ease;
+
+                updateCanvas();
+
+                requestAnimationFrame(tick);
+            }
+
+            // Update target scroll on wheel/touch
+            window.addEventListener('scroll', () => {
+                targetScrollY = window.scrollY;
+            }, { passive: true });
+            
+            // Initial draw attempt
+            drawFrame(0);
+        });
+    </script>
+</body>
+</html>
